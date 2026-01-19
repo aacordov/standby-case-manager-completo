@@ -407,7 +407,3 @@ Verificar antes de aprobar:
 - [ ] Documentación actualizada
 
 ---
-
-**Mantenido por:** Andrea Macias
-**Última actualización:** Enero 2026
-**Versión:** 1.0.0

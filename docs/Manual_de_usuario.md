@@ -546,9 +546,12 @@ Sí, todos los archivos se almacenan de forma segura en el servidor y se respald
 
 Si necesitas ayuda adicional:
 
-- 📧 **Email**: support@standby.com
+- 📧 **Email**: 
+- **Allan Córdova**: [aacordov@gmail.com](mailto:aacordov@gmail.com)
+- **José Briones**: [josmbrio@gmail.com](mailto:josmbrio@gmail.com)
+- **Larry Sánchez**: [lajasanc@gmail.com](mailto:lajasanc@gmail.com)
+- **Ronny Ortiz**: [ronny.ortiz.54@hotmail.com](mailto:ronny.ortiz.54@hotmail.com)
 - 💬 **Chat**: Disponible en horario laboral
-- 📖 **Documentación**: [docs.standby.com](https://docs.standby.com)
 
 ---
 
