@@ -669,9 +669,9 @@ Al agregar nuevas funcionalidades:
 
 Para dudas sobre testing:
 
-- **Andrea Córdova**: [aacordov@gmail.com](mailto:aacordov@gmail.com)
-- **José Brito**: [josmbrio@gmail.com](mailto:josmbrio@gmail.com)
-- **Luis Sánchez**: [lajasanc@gmail.com](mailto:lajasanc@gmail.com)
+- **Allan Córdova**: [aacordov@gmail.com](mailto:aacordov@gmail.com)
+- **José Briones**: [josmbrio@gmail.com](mailto:josmbrio@gmail.com)
+- **Larry Sánchez**: [lajasanc@gmail.com](mailto:lajasanc@gmail.com)
 - **Ronny Ortiz**: [ronny.ortiz.54@hotmail.com](mailto:ronny.ortiz.54@hotmail.com)
 
 ---
