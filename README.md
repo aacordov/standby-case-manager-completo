@@ -7,6 +7,7 @@
 ![Stack](https://img.shields.io/badge/Stack-FastAPI%20%7C%20React%20%7C%20PostgreSQL-blueviolet?style=for-the-badge)
 ![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen?style=for-the-badge)
 ![Coverage](https://img.shields.io/badge/Coverage-90%25-green?style=for-the-badge)
+![License](https://img.shields.io/badge/License-Private-red?style=for-the-badge)
 
 ---
 
@@ -26,7 +27,7 @@
 * **📊 Dashboard de Estadísticas**: Métricas y gráficos en tiempo real
 * **📤 Importación/Exportación**: Soporte para Excel (XLSX) y PDF
 * **🐳 Dockerizado**: Despliegue sencillo y consistente
-* **✅ Testing Completo**: Suite de tests unitarios e integración
+* **✅ Testing Completo**: Suite de tests unitarios e integración con 90% de cobertura
 
 ---
 
@@ -72,7 +73,19 @@ git clone git@github.com:rortiz-09/standby-case-manager.git
 cd standby-case-manager
 ```
 
-### 2️⃣ Ejecución
+### 2️⃣ Configuración Inicial
+
+Crea el archivo de variables de entorno:
+
+```bash
+# Copiar archivo de ejemplo
+cp .env.example .env
+
+# Editar con tus valores (opcional para desarrollo)
+# Los valores por defecto funcionan para ambiente local
+```
+
+### 3️⃣ Ejecución
 
 Levanta todo el entorno con un solo comando:
 
@@ -80,9 +93,9 @@ Levanta todo el entorno con un solo comando:
 docker compose up --build
 ```
 
-> ☕ **Primera vez**: Puede tardar unos minutos descargando imágenes
+> ☕ **Primera vez**: Puede tardar unos minutos descargando imágenes y construyendo contenedores
 
-### 3️⃣ Acceso
+### 4️⃣ Acceso
 
 | Servicio | URL | Descripción |
 |:---------|:----|:------------|
@@ -100,7 +113,7 @@ docker compose up --build
 | **Ingreso** | `ingreso@standby.com` | `ingreso123` | Crear/editar casos |
 | **Consulta** | `consulta@standby.com` | `consulta123` | Solo lectura |
 
-> ⚠️ **Importante**: Se recomienda cambiar esta contraseña inmediatamente después del primer inicio de sesión.
+> ⚠️ **Importante**: Se recomienda cambiar estas contraseñas inmediatamente después del primer inicio de sesión en producción.
 
 ---
 
@@ -114,6 +127,7 @@ standby-case-manager/
 │   │   ├── 📄 models.py       # Modelos SQLModel
 │   │   ├── 📄 database.py     # Configuración BD
 │   │   ├── 📄 auth.py         # Autenticación JWT
+│   │   ├── 📄 schemas.py      # Schemas Pydantic
 │   │   └── 📁 routers/        # Endpoints
 │   │       ├── 📄 auth.py     # Login/registro
 │   │       ├── 📄 cases.py    # CRUD casos
@@ -121,8 +135,13 @@ standby-case-manager/
 │   │       ├── 📄 files.py    # Upload archivos
 │   │       ├── 📄 stats.py    # Estadísticas
 │   │       └── 📄 import_export.py
-│   ├── 📁 test/               # Tests unitarios
+│   ├── 📁 test/               # Tests unitarios e integración
+│   │   ├── 📄 conftest.py    # Fixtures compartidas
+│   │   ├── 📁 unit/          # Tests unitarios
+│   │   ├── 📁 integration/   # Tests de integración
+│   │   └── 📄 README.md      # Guía de testing
 │   ├── 📄 requirements.txt
+│   ├── 📄 requirements-test.txt
 │   └── 📄 Dockerfile
 │
 ├── 📁 frontend/               # SPA React + Vite
@@ -134,19 +153,26 @@ standby-case-manager/
 │   │   ├── 📁 api/          # Axios config
 │   │   ├── 📁 types/        # TypeScript types
 │   │   ├── 📁 utils/        # Utilidades
-│   │   └── 📁 test/         # Tests
+│   │   └── 📁 test/         # Tests (unitarios/integración)
+│   │       ├── 📁 mocks/    # Mocks para MSW
+│   │       └── 📄 setup.ts  # Configuración de tests
 │   ├── 📄 package.json
 │   ├── 📄 vite.config.ts
+│   ├── 📄 vitest.config.ts
 │   ├── 📄 tailwind.config.js
+│   ├── 📄 run_tests.sh      # Script para ejecutar tests
 │   └── 📄 Dockerfile
 │
 ├── 📁 docs/                   # Documentación
-│   ├── 📄 MANUAL_USUARIO.md
-│   ├── 📄 DOCUMENTACION_TECNICA.md
-│   └── 📄 DEPLOYMENT.md
+│   ├── 📄 Manual_de_usuario.md
+│   ├── 📄 Documentacion_tecnica.md
+│   └── 📄 Deployment.md
 │
 ├── 📄 docker-compose.yml
+├── 📄 .env.example
 ├── 📄 .gitignore
+├── 📄 CONTRIBUTING.md
+├── 📄 CHANGELOG.md
 └── 📄 README.md
 ```
 
@@ -161,15 +187,16 @@ Si deseas ejecutar los servicios fuera de Docker para desarrollo:
 ```bash
 cd backend
 
-# Crear entorno virtual con uv
-uv venv
+# Crear entorno virtual
+python3 -m venv .venv
 
 # Activar entorno
 # Windows: .venv\Scripts\activate
 # Linux/Mac: source .venv/bin/activate
 
 # Instalar dependencias
-uv pip install -r requirements.txt
+pip install -r requirements.txt
+pip install -r requirements-test.txt  # Para desarrollo
 
 # Ejecutar servidor
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -188,48 +215,109 @@ ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```bash
 cd frontend
 
+# Instalar Node Version Manager (si no lo tienes)
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+source ~/.bashrc
+
+# Instalar Node.js
+nvm install --lts
+nvm use --lts
+
 # Instalar dependencias
-bun install
+npm install
+
+# Instalar dependencias de testing
+npm install -D vitest @vitest/ui @vitest/coverage-v8 \
+  @testing-library/react @testing-library/jest-dom \
+  @testing-library/user-event jsdom msw
 
 # Ejecutar en desarrollo
-bun run dev
+npm run dev
 
 # Ejecutar tests
-bun run test
-
-# Tests con UI
-bun run test:ui
-
-# Coverage
-bun run test:coverage
+chmod +x run_tests.sh
+./run_tests.sh
 
 # Build para producción
-bun run build
+npm run build
+```
+
+**Variables de entorno** (`frontend/.env`):
+```env
+VITE_API_URL=http://localhost:8000
+VITE_APP_NAME=Standby Case Manager
 ```
 
 ---
 
 ## 🧪 Testing
 
+El proyecto cuenta con una suite completa de tests con **~90% de cobertura** en backend y frontend.
+
 ### Backend Tests
+
+El backend incluye **tests unitarios** y **tests de integración**:
 
 ```bash
 cd backend
+
+# Crear y activar entorno virtual
+python3 -m venv .venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+
+# Instalar dependencias
+pip install -r requirements.txt
+pip install -r requirements-test.txt
+
+# Ejecutar todos los tests
 pytest
+
+# Solo tests unitarios
+pytest test/unit -v
+
+# Solo tests de integración
+pytest test/integration -v
+
+# Con coverage
 pytest --cov=app --cov-report=html
+
+# Ver reporte HTML
+open htmlcov/index.html  # En Linux: xdg-open htmlcov/index.html
 ```
+
+**Tipos de tests en backend:**
+- **Unitarios** (`test/unit/`): Tests de funciones, lógica de negocio y modelos
+- **Integración** (`test/integration/`): Tests de endpoints completos con base de datos
 
 ### Frontend Tests
 
+El frontend incluye **tests unitarios** y **tests de integración** con React Testing Library:
+
 ```bash
 cd frontend
-bun run test              # Modo interactivo
-bun run test:run          # Una vez
-bun run test:ui           # UI visual
-bun run test:coverage     # Con coverage
+
+# Instalar dependencias (si aún no lo hiciste)
+npm install
+npm install -D vitest @vitest/ui @vitest/coverage-v8 \
+  @testing-library/react @testing-library/jest-dom \
+  @testing-library/user-event jsdom msw
+
+# Dar permisos al script
+chmod +x run_tests.sh
+
+# Ejecutar tests con el script
+./run_tests.sh
+
+# O ejecutar directamente con npm
+npm run test              # Modo interactivo
+npm run test:run          # Una sola vez
+npm run test:ui           # UI visual
+npm run test:coverage     # Con coverage
 ```
 
-**Coverage actual**: ~90% del código
+**Tipos de tests en frontend:**
+- **Unitarios**: Tests de componentes individuales, hooks y utilidades
+- **Integración**: Tests de flujos completos de usuario con mocks de API
 
 ---
 
@@ -276,8 +364,8 @@ bun run test:coverage     # Con coverage
 - 🛡️ **CORS** configurado para dominios permitidos
 - 🔑 **Bcrypt** para hash de contraseñas
 - 👤 **Role-based Access Control** (RBAC)
-- 🚫 **Rate Limiting** en endpoints críticos
 - 📝 **Validación** con Pydantic y Zod
+- 🔒 **SQL Injection Protection** mediante ORM
 
 ---
 
@@ -287,9 +375,9 @@ bun run test:coverage     # Con coverage
 
 ```yaml
 services:
-  - postgres: Base de datos
-  - backend: API FastAPI
-  - frontend: React SPA
+  - postgres: Base de datos PostgreSQL 15
+  - backend: API FastAPI en Python 3.11
+  - frontend: React SPA servido con Nginx
 ```
 
 ### Comandos útiles
@@ -301,6 +389,9 @@ docker compose up -d
 # Ver logs
 docker compose logs -f
 
+# Ver logs de un servicio específico
+docker compose logs -f backend
+
 # Reiniciar servicio
 docker compose restart backend
 
@@ -310,18 +401,79 @@ docker compose exec backend bash
 # Detener todo
 docker compose down
 
-# Limpiar volúmenes
+# Limpiar volúmenes (⚠️ elimina datos)
 docker compose down -v
+
+# Reconstruir imágenes
+docker compose build --no-cache
+```
+
+---
+
+## 🔧 Solución de Problemas
+
+### El contenedor de backend no inicia
+
+**Síntomas:** Error al ejecutar `docker compose up`
+
+**Soluciones:**
+1. Verificar que PostgreSQL esté corriendo: `docker compose ps`
+2. Revisar logs: `docker compose logs backend`
+3. Verificar variables de entorno en `.env`
+4. Reiniciar contenedor: `docker compose restart backend`
+
+### Error "Cannot connect to database"
+
+**Causa:** La base de datos no está lista cuando el backend intenta conectar.
+
+**Solución:**
+```bash
+docker compose restart backend
+```
+
+### Frontend no carga
+
+**Verificar:**
+1. ¿El contenedor está corriendo? `docker compose ps frontend`
+2. ¿Está accesible en http://localhost:3000?
+3. Revisar logs: `docker compose logs frontend`
+4. Limpiar caché del navegador
+
+### Problemas de permisos con archivos
+
+**En Linux:**
+```bash
+sudo chown -R $USER:$USER .
+```
+
+### Los tests fallan con "ModuleNotFoundError"
+
+**Backend:**
+```bash
+# Asegurarse de estar en el directorio correcto
+cd backend
+# Verificar que el entorno virtual está activado
+source .venv/bin/activate
+# Reinstalar dependencias
+pip install -r requirements.txt -r requirements-test.txt
+```
+
+**Frontend:**
+```bash
+# Limpiar node_modules
+rm -rf node_modules package-lock.json
+npm install
 ```
 
 ---
 
 ## 📖 Documentación Adicional
 
-- 📘 [Manual de Usuario](./docs/MANUAL_USUARIO.md) - Guía completa de uso
-- 🔧 [Documentación Técnica](./docs/DOCUMENTACION_TECNICA.md) - Arquitectura y APIs
-- 🚀 [Guía de Despliegue](./docs/DEPLOYMENT.md) - Deploy en producción
+- 📘 [Manual de Usuario](./docs/Manual_de_usuario.md) - Guía completa de uso
+- 🔧 [Documentación Técnica](./docs/Documentacion_tecnica.md) - Arquitectura y APIs
+- 🚀 [Guía de Despliegue](./docs/Deployment.md) - Deploy en producción
 - 🤝 [Guía de Contribución](./CONTRIBUTING.md) - Cómo contribuir
+- 🧪 [Guía de Testing](./backend/test/README.md) - Estrategia de testing
 
 ---
 
@@ -335,7 +487,7 @@ Las contribuciones son bienvenidas. Por favor:
 4. Push a la rama (`git push origin feature/AmazingFeature`)
 5. Abre un Pull Request
 
-Ver [CONTRIBUTING.md](./CONTRIBUTING.md) para más detalles.
+Ver [CONTRIBUTING.md](./CONTRIBUTING.md) para más detalles sobre estándares de código y proceso de review.
 
 ---
 
@@ -353,16 +505,20 @@ Este proyecto es propiedad privada. Todos los derechos reservados.
 
 ---
 
-## 👥 Equipo
+## 👥 Equipo de Desarrollo
 
-Desarrollado con ❤️ por el equipo de Standby Operations.
+Desarrollado con ❤️ por:
+
+- **Andrea Córdova** - [aacordov@gmail.com](mailto:aacordov@gmail.com)
+- **José Brito** - [josmbrio@gmail.com](mailto:josmbrio@gmail.com)
+- **Luis Sánchez** - [lajasanc@gmail.com](mailto:lajasanc@gmail.com)
+- **Ronny Ortiz** - [ronny.ortiz.54@hotmail.com](mailto:ronny.ortiz.54@hotmail.com)
 
 ---
 
 ## 📞 Soporte
 
-- 📧 Email: support@standby.com
-- 💬 Slack: #standby-support
+- 📧 Email: [aacordov@gmail.com](mailto:aacordov@gmail.com)
 - 🐛 Issues: [GitHub Issues](https://github.com/rortiz-09/standby-case-manager/issues)
 
 ---
