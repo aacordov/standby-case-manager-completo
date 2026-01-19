@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Filter, AlertCircle, ArrowRight, Activity, Upload, Download, RefreshCw, FileText } from 'lucide-react';
+import { Search, Filter, AlertCircle, ArrowRight, Activity, RefreshCw } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axios';
 import { clsx } from 'clsx';
@@ -10,8 +10,6 @@ import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { Skeleton } from '../components/Skeleton';
 import { StatsOverview } from '../components/StatsOverview';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { Switch } from '@headlessui/react';
 import { useToast } from '../context/ToastContext';
 import { ConfirmationModal } from '../components/ui/ConfirmationModal';
@@ -84,93 +82,21 @@ export default function Dashboard() {
         }
     };
 
-    const handleExport = async (format: 'tsv' | 'xlsx' | 'csv' = 'tsv') => {
-        try {
-            const response = await api.get(`/cases-io/export?format=${format}`, {
-                responseType: 'blob'
-            });
-            const url = window.URL.createObjectURL(new Blob([response.data]));
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `cases_export.${format}`);
-            document.body.appendChild(link);
-            link.click();
-            link.parentNode?.removeChild(link);
-        } catch (error) {
-            console.error('Error exporting cases:', error);
-            // Ideally show a toast here
-        }
-    };
-
-    const handleImport = async (event: React.ChangeEvent<HTMLInputElement>, type: 'clean' | 'legacy') => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const endpoint = type === 'legacy' ? '/cases-io/import-legacy' : '/cases-io/import';
-
-        try {
-            const res = await api.post(endpoint, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
-            // Refresh cases
-            queryClient.invalidateQueries({ queryKey: ['cases'] });
-            queryClient.invalidateQueries({ queryKey: ['stats'] });
-            showToast('success', 'Importación Exitosa', res.data.message || 'Los casos han sido importados correctamente.');
-        } catch (error: any) {
-            console.error('Error importing cases:', error);
-            showToast('error', 'Error Importación', error.response?.data?.detail || 'Error al procesar el archivo.');
-        }
-
-        // Reset input
-        event.target.value = '';
-    };
-
-    const handleExportPDF = () => {
-        const doc = new jsPDF();
-
-        doc.setFontSize(18);
-        doc.text("Reporte de Casos - Standby Manager", 14, 22);
-        doc.setFontSize(11);
-        doc.text(`Generado: ${new Date().toLocaleString()}`, 14, 30);
-
-        const tableColumn = ["Código", "Servicio", "Estado", "Prioridad", "Responsable", "Actualizado"];
-        const tableRows: any[] = [];
-
-        cases.forEach((c) => {
-            const caseData = [
-                c.codigo,
-                c.servicio_o_plataforma,
-                c.estado,
-                c.prioridad,
-                c.sby_responsable || '-',
-                new Date(c.ultima_actualizacion || new Date()).toLocaleDateString()
-            ];
-            tableRows.push(caseData);
-        });
-
-        // @ts-ignore
-        autoTable(doc, {
-            head: [tableColumn],
-            body: tableRows,
-            startY: 40,
-            styles: { fontSize: 8 },
-            headStyles: { fillColor: [79, 70, 229] } // Indigo
-        });
-
-        doc.save("reporte_casos.pdf");
-    };
-
-    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    // Bulk Actions
     const queryClient = useQueryClient();
     const { showToast } = useToast();
+    const [selectedIds, setSelectedIds] = useState<number[]>([]);
+    const [confirmModal, setConfirmModal] = useState({
+        isOpen: false,
+        title: '',
+        message: '',
+        action: '' as 'CLOSE' | '',
+        value: ''
+    });
 
-    // Toggle selection
     const toggleSelection = (id: number) => {
         setSelectedIds(prev =>
-            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
         );
     };
 
@@ -182,19 +108,11 @@ export default function Dashboard() {
         }
     };
 
-    const [confirmModal, setConfirmModal] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        action: null as 'CLOSE' | 'ASSIGN' | 'PRIORITY' | null,
-        value: ''
-    });
-
-    const handleBulkActionRequest = (action: 'CLOSE' | 'ASSIGN' | 'PRIORITY', value: string) => {
+    const handleBulkActionRequest = (action: 'CLOSE', value: string) => {
         setConfirmModal({
             isOpen: true,
-            title: action === 'CLOSE' ? 'Cerrar Casos' : 'Actualización Masiva',
-            message: `¿Estás seguro de que deseas actualizar ${selectedIds.length} casos seleccionados? Esta acción no se puede deshacer.`,
+            title: 'Confirmar Acción Masiva',
+            message: `¿Estás seguro de que deseas cerrar ${selectedIds.length} casos?`,
             action,
             value
         });
@@ -223,12 +141,11 @@ export default function Dashboard() {
             <StatsOverview autoRefresh={autoRefresh} />
 
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                {/* Same header content */}
                 <div>
                     <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Tablero de Casos</h1>
                     <p className="text-slate-500 dark:text-slate-400 mt-1">Monitoreo y gestión de incidentes en tiempo real.</p>
                 </div>
-                {/* Same buttons */}
+                
                 <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700">
                         <Activity size={14} className="text-indigo-500" />
@@ -237,7 +154,7 @@ export default function Dashboard() {
 
                     <div className="flex items-center gap-2">
                         {/* Auto Refresh Toggle */}
-                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg h-9 px-3 flex items-center gap-2 mr-2">
+                        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg h-9 px-3 flex items-center gap-2">
                             <RefreshCw size={14} className={clsx("text-slate-500", autoRefresh && "animate-spin text-indigo-500")} />
                             <Switch
                                 checked={autoRefresh}
@@ -252,65 +169,11 @@ export default function Dashboard() {
                             </Switch>
                             <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Auto</span>
                         </div>
-
-                        <input
-                            type="file"
-                            id="import-file-clean"
-                            className="hidden"
-                            accept=".xlsx,.xls,.csv"
-                            onChange={(e) => handleImport(e, 'clean')}
-                        />
-                        <input
-                            type="file"
-                            id="import-file-legacy"
-                            className="hidden"
-                            accept=".xlsx,.xls"
-                            onChange={(e) => handleImport(e, 'legacy')}
-                        />
-
-                        <div className="relative group">
-                            <button
-                                className="flex items-center justify-center w-9 h-9 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden transition-colors"
-                                title="Importar"
-                            >
-                                <Download size={16} />
-                            </button>
-                            <div className="absolute right-0 top-10 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-xl border border-slate-200 dark:border-slate-700 p-1 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all z-50">
-                                <label htmlFor="import-file-clean" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded cursor-pointer">
-                                    <RefreshCw size={14} className="text-emerald-500" />
-                                    Restaurar Backup
-                                </label>
-                                <label htmlFor="import-file-legacy" className="flex items-center gap-2 px-3 py-2 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded cursor-pointer border-t border-slate-100 dark:border-slate-700/50 mt-1 pt-2">
-                                    <FileText size={14} className="text-orange-500" />
-                                    Importar Bitácora
-                                </label>
-                            </div>
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            className="h-9 px-3 gap-2"
-                            onClick={() => handleExport('xlsx')}
-                            title="Exportar Excel"
-                        >
-                            <Upload size={16} />
-                            <span className="hidden sm:inline">Excel</span>
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            className="h-9 px-3 gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20 dark:border-red-900/30"
-                            onClick={handleExportPDF}
-                            title="Exportar PDF"
-                        >
-                            <FileText size={16} />
-                            <span className="hidden sm:inline">PDF</span>
-                        </Button>
                     </div>
                 </div>
             </div>
 
-            {/* Filters Section (Preserved) */}
+            {/* Filters Section */}
             <Card className="p-5 space-y-4 relative z-30 overflow-visible">
                 <div className="flex items-center gap-2 text-slate-900 dark:text-white font-medium mb-2">
                     <Filter size={16} /> Filtros de Búsqueda
@@ -321,15 +184,16 @@ export default function Dashboard() {
                         <DateRangeFilter
                             startDate={filters.start_date}
                             endDate={filters.end_date}
-                            onRangeChange={(start, end) => setFilters({ ...filters, start_date: start, end_date: end })}
+                            onStartDateChange={(date) => setFilters({ ...filters, start_date: date })}
+                            onEndDateChange={(date) => setFilters({ ...filters, end_date: date })}
                         />
 
                         <select
-                            className="w-40 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-500/50"
                             value={filters.status}
                             onChange={e => setFilters({ ...filters, status: e.target.value })}
+                            className="px-3 py-2 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                         >
-                            <option value="">Todos los Estados</option>
+                            <option value="">Estado: Todos</option>
                             <option value="ABIERTO">Abierto</option>
                             <option value="STANDBY">Standby</option>
                             <option value="EN_MONITOREO">En Monitoreo</option>
@@ -337,28 +201,38 @@ export default function Dashboard() {
                         </select>
 
                         <select
-                            className="w-40 px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 focus:ring-2 focus:ring-indigo-500/50 outline-none transition-all dark:border-slate-700 dark:bg-slate-900 dark:text-white dark:focus:ring-blue-500/50"
                             value={filters.priority}
                             onChange={e => setFilters({ ...filters, priority: e.target.value })}
+                            className="px-3 py-2 rounded-lg text-sm bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
                         >
-                            <option value="">Todas las Prioridades</option>
+                            <option value="">Prioridad: Todas</option>
                             <option value="CRITICO">Crítico</option>
                             <option value="ALTO">Alto</option>
                             <option value="MEDIO">Medio</option>
                             <option value="BAJO">Bajo</option>
                         </select>
 
-                        {/* Expanded Search */}
-                        <div className="flex-1 min-w-[200px] relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-gray-500" size={16} />
-                            <Input
-                                type="text"
-                                placeholder="Buscar..."
-                                className="pl-10 w-full"
-                                value={filters.search}
-                                onChange={e => setFilters({ ...filters, search: e.target.value })}
-                            />
-                        </div>
+                        <Button
+                            variant="outline"
+                            onClick={() => setFilters({ status: '', priority: '', service: '', sby_responsable: '', search: '', start_date: '', end_date: '' })}
+                            className="h-9 text-sm"
+                        >
+                            Limpiar
+                        </Button>
+                    </div>
+                </div>
+
+                {/* Search & Text Filters - Bottom Row */}
+                <div className="flex flex-col md:flex-row gap-4 relative z-10">
+                    <div className="flex-1 relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                        <Input
+                            type="text"
+                            placeholder="Buscar por código o comentarios..."
+                            className="pl-10 w-full"
+                            value={filters.search}
+                            onChange={e => setFilters({ ...filters, search: e.target.value })}
+                        />
                     </div>
 
                     {/* Secondary Filters */}
@@ -487,7 +361,6 @@ export default function Dashboard() {
                     >
                         Cerrar Casos
                     </button>
-                    {/* Add more bulk actions here if needed */}
                     <button
                         onClick={() => setSelectedIds([])}
                         className="ml-2 p-1 hover:bg-white/10 dark:hover:bg-black/10 rounded-full"

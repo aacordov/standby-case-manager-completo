@@ -25,7 +25,7 @@
 * **🌍 Soporte de Zona Horaria**: Detección automática para búsquedas precisas
 * **🔒 Seguridad**: Autenticación JWT y gestión de roles (Admin/Ingreso/Consulta)
 * **📊 Dashboard de Estadísticas**: Métricas y gráficos en tiempo real
-* **📤 Importación/Exportación**: Soporte para Excel (XLSX) y PDF
+* **📤 Importación/Exportación**: Módulo dedicado con soporte para Excel (XLSX), CSV y observaciones múltiples por caso
 * **🐳 Dockerizado**: Despliegue sencillo y consistente
 * **✅ Testing Completo**: Suite de tests unitarios e integración con 90% de cobertura
 
@@ -34,6 +34,7 @@
 ## 🛠️ Tecnologías
 
 ### Backend
+
 - ⚡ **FastAPI** - Framework web moderno y rápido
 - 🐘 **PostgreSQL** - Base de datos relacional
 - 🔐 **JWT** - Autenticación segura
@@ -41,6 +42,7 @@
 - 🧪 **Pytest** - Framework de testing
 
 ### Frontend
+
 - ⚛️ **React 18** - Librería UI con hooks
 - ⚡ **Vite** - Build tool ultrarrápido
 - 🎨 **TailwindCSS** - Framework CSS utility-first
@@ -50,6 +52,7 @@
 - 📊 **Recharts** - Gráficos y visualizaciones
 
 ### DevOps & Tools
+
 - 🐳 **Docker** - Containerización
 - 🥯 **Bun** - Runtime JavaScript rápido
 - 🚀 **uv** - Gestor de paquetes Python ultrarrápido
@@ -97,21 +100,21 @@ docker compose up --build
 
 ### 4️⃣ Acceso
 
-| Servicio | URL | Descripción |
-|:---------|:----|:------------|
-| **Frontend** | [http://localhost:3000](http://localhost:3000) | Interfaz principal |
-| **API Docs** | [http://localhost:8000/docs](http://localhost:8000/docs) | Swagger UI |
+| Servicio      | URL                                                        | Descripción               |
+| :------------ | :--------------------------------------------------------- | :------------------------ |
+| **Frontend**  | [http://localhost:3000](http://localhost:3000)             | Interfaz principal        |
+| **API Docs**  | [http://localhost:8000/docs](http://localhost:8000/docs)   | Swagger UI                |
 | **API ReDoc** | [http://localhost:8000/redoc](http://localhost:8000/redoc) | Documentación alternativa |
 
 ---
 
 ## 🔐 Credenciales por Defecto
 
-| Rol | Email | Password | Permisos |
-|:----|:------|:---------|:---------|
-| **Admin** | `admin@standby.com` | `admin123` | Acceso total |
-| **Ingreso** | `ingreso@standby.com` | `ingreso123` | Crear/editar casos |
-| **Consulta** | `consulta@standby.com` | `consulta123` | Solo lectura |
+| Rol          | Email                  | Password      | Permisos           |
+| :----------- | :--------------------- | :------------ | :----------------- |
+| **Admin**    | `admin@standby.com`    | `admin123`    | Acceso total       |
+| **Ingreso**  | `ingreso@standby.com`  | `ingreso123`  | Crear/editar casos |
+| **Consulta** | `consulta@standby.com` | `consulta123` | Solo lectura       |
 
 > ⚠️ **Importante**: Se recomienda cambiar estas contraseñas inmediatamente después del primer inicio de sesión en producción.
 
@@ -149,6 +152,10 @@ standby-case-manager/
 │   │   ├── 📁 components/    # Componentes React
 │   │   │   └── 📁 ui/       # UI Components
 │   │   ├── 📁 pages/        # Páginas/rutas
+│   │   │   ├── 📄 Dashboard.tsx
+│   │   │   ├── 📄 CaseForm.tsx
+│   │   │   ├── 📄 ImportExportCases.tsx
+│   │   │   └── 📄 ...
 │   │   ├── 📁 context/      # Context API
 │   │   ├── 📁 api/          # Axios config
 │   │   ├── 📁 types/        # TypeScript types
@@ -203,6 +210,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 **Variables de entorno** (`backend/.env`):
+
 ```env
 DATABASE_URL=postgresql://user:password@localhost:5432/standby_db
 SECRET_KEY=your-secret-key-here
@@ -243,6 +251,7 @@ npm run build
 ```
 
 **Variables de entorno** (`frontend/.env`):
+
 ```env
 VITE_API_URL=http://localhost:8000
 VITE_APP_NAME=Standby Case Manager
@@ -286,6 +295,7 @@ open htmlcov/index.html  # En Linux: xdg-open htmlcov/index.html
 ```
 
 **Tipos de tests en backend:**
+
 - **Unitarios** (`test/unit/`): Tests de funciones, lógica de negocio y modelos
 - **Integración** (`test/integration/`): Tests de endpoints completos con base de datos
 
@@ -316,6 +326,7 @@ npm run test:coverage     # Con coverage
 ```
 
 **Tipos de tests en frontend:**
+
 - **Unitarios**: Tests de componentes individuales, hooks y utilidades
 - **Integración**: Tests de flujos completos de usuario con mocks de API
 
@@ -324,11 +335,13 @@ npm run test:coverage     # Con coverage
 ## 📊 API Endpoints
 
 ### Autenticación
+
 - `POST /auth/login` - Iniciar sesión
 - `GET /auth/me` - Obtener usuario actual
 - `POST /auth/refresh` - Renovar token
 
 ### Casos
+
 - `GET /cases` - Listar casos (con filtros)
 - `POST /cases` - Crear caso
 - `GET /cases/{id}` - Obtener caso
@@ -336,25 +349,31 @@ npm run test:coverage     # Con coverage
 - `DELETE /cases/{id}` - Eliminar caso
 
 ### Usuarios
+
 - `GET /users` - Listar usuarios
 - `POST /users` - Crear usuario
 - `PUT /users/{id}` - Actualizar usuario
 - `DELETE /users/{id}` - Eliminar usuario
 
 ### Archivos
+
 - `POST /files/upload` - Subir archivo
 - `GET /files/{id}` - Descargar archivo
 - `DELETE /files/{id}` - Eliminar archivo
 
 ### Estadísticas
+
 - `GET /stats/dashboard` - Dashboard principal
 - `GET /stats/cases-by-status` - Por estado
 - `GET /stats/cases-by-priority` - Por prioridad
 
 ### Import/Export
-- `POST /export/cases` - Exportar a Excel
-- `POST /export/pdf` - Exportar a PDF
-- `POST /import/cases` - Importar desde Excel
+
+- `POST /cases-io/import-with-observations` - Importar casos con observaciones
+- `GET /cases-io/export-with-observations` - Exportar casos y observaciones (Excel/CSV)
+- `POST /cases-io/import-legacy` - Importar desde bitácora legacy
+- `POST /cases-io/import` - Importar casos simple
+- `GET /cases-io/export` - Exportar casos simple (TSV/CSV/XLSX)
 
 ---
 
@@ -417,6 +436,7 @@ docker compose build --no-cache
 **Síntomas:** Error al ejecutar `docker compose up`
 
 **Soluciones:**
+
 1. Verificar que PostgreSQL esté corriendo: `docker compose ps`
 2. Revisar logs: `docker compose logs backend`
 3. Verificar variables de entorno en `.env`
@@ -427,6 +447,7 @@ docker compose build --no-cache
 **Causa:** La base de datos no está lista cuando el backend intenta conectar.
 
 **Solución:**
+
 ```bash
 docker compose restart backend
 ```
@@ -434,6 +455,7 @@ docker compose restart backend
 ### Frontend no carga
 
 **Verificar:**
+
 1. ¿El contenedor está corriendo? `docker compose ps frontend`
 2. ¿Está accesible en http://localhost:3000?
 3. Revisar logs: `docker compose logs frontend`
@@ -442,6 +464,7 @@ docker compose restart backend
 ### Problemas de permisos con archivos
 
 **En Linux:**
+
 ```bash
 sudo chown -R $USER:$USER .
 ```
@@ -449,6 +472,7 @@ sudo chown -R $USER:$USER .
 ### Los tests fallan con "ModuleNotFoundError"
 
 **Backend:**
+
 ```bash
 # Asegurarse de estar en el directorio correcto
 cd backend
@@ -459,6 +483,7 @@ pip install -r requirements.txt -r requirements-test.txt
 ```
 
 **Frontend:**
+
 ```bash
 # Limpiar node_modules
 rm -rf node_modules package-lock.json

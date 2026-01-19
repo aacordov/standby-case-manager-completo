@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import Layout from './components/Layout';
 import { ToastProvider } from './context/ToastContext';
+import { ThemeProvider } from './context/ThemeContext';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import ImportExportCases from './pages/ImportExportCases';
 
 // Lazy load pages for better performance
 const Login = lazy(() => import('./pages/Login'));
@@ -26,10 +29,6 @@ function PrivateRoute({ children }: { children: JSX.Element }) {
     return token ? children : <Navigate to="/login" />;
 }
 
-import { ThemeProvider } from './context/ThemeContext';
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
 const queryClient = new QueryClient({
     defaultOptions: {
         queries: {
@@ -49,10 +48,12 @@ function App() {
                         <Suspense fallback={<LoadingSpinner />}>
                             <Routes>
                                 <Route path="/login" element={<Login />} />
+                                
                                 <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
                                     <Route index element={<Dashboard />} />
                                     <Route path="cases/new" element={<CaseForm />} />
                                     <Route path="cases/:id" element={<CaseForm />} />
+                                    <Route path="import-export" element={<ImportExportCases />} />
                                     <Route path="users" element={<UserManagement />} />
                                     <Route path="developers" element={<Developers />} />
                                     <Route path="*" element={<NotFound />} />

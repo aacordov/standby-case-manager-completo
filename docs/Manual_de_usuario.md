@@ -77,10 +77,11 @@ Una vez iniciada la sesión, verás el panel principal con:
 
 ### Menú Lateral
 
-- 📊 **Dashboard**: Vista general y estadísticas
-- 📋 **Casos**: Lista y gestión de casos
+- 📊 **Tablero**: Vista general y estadísticas
+- ➕ **Nuevo Caso**: Crear un caso nuevo
+- 📤 **Importar/Exportar**: Gestión masiva de casos
 - 👥 **Usuarios**: Gestión de usuarios (solo Admin)
-- ⚙️ **Configuración**: Ajustes del sistema
+- 💻 **Desarrolladores**: Información del equipo
 
 ---
 
@@ -88,64 +89,64 @@ Una vez iniciada la sesión, verás el panel principal con:
 
 ### Ver Lista de Casos
 
-1. Click en **Casos** en el menú lateral
+1. Click en **Tablero** en el menú lateral
 2. Verás una tabla con todos los casos
 3. Cada caso muestra:
-   - ID del caso
-   - Título
-   - Prioridad (🔴 Alta, 🟡 Media, 🟢 Baja)
-   - Estado (Abierto, En Progreso, Resuelto, Cerrado)
+   - Código del caso
+   - Servicio/Plataforma
+   - Estado (Abierto, Standby, En Monitoreo, Cerrado)
+   - Prioridad (🔴 Crítico, 🟠 Alto, 🟡 Medio, 🟢 Bajo)
    - Responsable
-   - Fecha de creación
+   - Fecha de actualización
 
 ### Crear Nuevo Caso
 
-1. Click en el botón **+ Nuevo Caso**
+1. Click en **Nuevo Caso** en el menú lateral
 2. Completa el formulario:
    ```
-   - Título: Descripción breve del caso
-   - Descripción: Detalles completos
-   - Prioridad: Alta / Media / Baja
-   - Tipo: Incidente / Problema / Solicitud
-   - Responsable: Selecciona un usuario
-   - Fecha límite: (opcional)
+   - Código: Identificador único (ej: HP-0001)
+   - Servicio/Plataforma: Sistema afectado
+   - Prioridad: Crítico / Alto / Medio / Bajo
+   - Estado: Abierto (por defecto)
+   - Responsable: Usuario asignado
+   - Novedades: Descripción del caso
    ```
-3. Click en **Crear Caso**
+3. Click en **Guardar Caso**
 
 ### Editar un Caso
 
-1. Click en el caso que deseas editar
-2. En la vista detallada, click en **✏️ Editar**
-3. Modifica los campos necesarios
-4. Click en **Guardar Cambios**
+1. En el Tablero, click en **Ver** junto al caso
+2. Se abrirá la vista detallada
+3. Click en **Editar**
+4. Modifica los campos necesarios
+5. Click en **Guardar Cambios**
 
 ### Ver Detalles de un Caso
 
-1. Click en cualquier caso de la lista
-2. Se abrirá un panel lateral con:
-   - Información completa
+1. Click en **Ver** junto a cualquier caso
+2. Se abrirá un panel con:
+   - Información completa del caso
+   - Observaciones/comentarios
    - Historial de cambios
-   - Comentarios
    - Archivos adjuntos
-   - Línea de tiempo
+   - Auditoría de acciones
 
 ### Cambiar Estado de un Caso
 
-En la vista detallada:
+En la vista detallada o edición:
 
-1. Click en el estado actual
-2. Selecciona el nuevo estado:
-   - 🔵 Abierto
-   - 🟡 En Progreso
-   - 🟢 Resuelto
-   - ⚫ Cerrado
+1. Selecciona el nuevo estado:
+   - 🔵 **Abierto**: Caso nuevo o reabierto
+   - 🟡 **Standby**: En espera
+   - 🟠 **En Monitoreo**: Requiere seguimiento
+   - 🟢 **Cerrado**: Caso resuelto
 
-### Agregar Comentarios
+### Agregar Observaciones
 
 1. En la vista detallada del caso
-2. Scroll hasta la sección de comentarios
+2. Scroll hasta la sección de observaciones
 3. Escribe tu comentario en el campo de texto
-4. Click en **Enviar**
+4. Click en **Agregar Observación**
 
 ### Eliminar un Caso (Solo Admin)
 
@@ -162,17 +163,17 @@ En la vista detallada:
 
 ### Búsqueda Rápida
 
-En la barra superior:
+En el Tablero:
 
-1. Click en el campo de búsqueda
+1. Usa el campo de búsqueda en la parte superior
 2. Escribe palabras clave
-3. Los resultados se mostrarán automáticamente
+3. Los resultados se filtrarán automáticamente
 
 Puedes buscar por:
-- ID de caso
-- Título
-- Descripción
+- Código de caso
+- Servicio/Plataforma
 - Responsable
+- Comentarios
 
 ### Filtros Avanzados
 
@@ -194,24 +195,29 @@ Click en el selector de fechas y elige:
 
 #### Por Prioridad
 
-- 🔴 Alta
-- 🟡 Media
-- 🟢 Baja
+- 🔴 Crítico
+- 🟠 Alto
+- 🟡 Medio
+- 🟢 Bajo
 
 #### Por Estado
 
 - 🔵 Abierto
-- 🟡 En Progreso
-- 🟢 Resuelto
-- ⚫ Cerrado
+- 🟡 Standby
+- 🟠 En Monitoreo
+- 🟢 Cerrado
+
+#### Por Servicio/Plataforma
+
+Escribe el nombre del servicio en el campo correspondiente.
 
 #### Por Responsable
 
-Selecciona uno o varios usuarios del dropdown.
+Escribe el nombre del responsable en el campo correspondiente.
 
 ### Limpiar Filtros
 
-Click en el botón **Limpiar Filtros** para resetear todos los filtros.
+Click en el botón **Limpiar** para resetear todos los filtros.
 
 ---
 
@@ -229,8 +235,9 @@ El Command Palette te permite acceder rápidamente a cualquier función del sist
 ```
 🔍 Buscar casos...
 ➕ Crear nuevo caso
+📤 Importar/Exportar casos
 👥 Ver usuarios
-📊 Ir a dashboard
+📊 Ir a tablero
 ⚙️ Configuración
 🚪 Cerrar sesión
 ```
@@ -250,7 +257,7 @@ El Command Palette te permite acceder rápidamente a cualquier función del sist
 #### Método 1: Drag & Drop
 
 1. Abre un caso
-2. Ve a la sección "Archivos"
+2. Ve a la sección "Evidencias"
 3. Arrastra los archivos desde tu explorador
 4. Suéltalos en el área designada
 
@@ -263,7 +270,7 @@ El Command Palette te permite acceder rápidamente a cualquier función del sist
 ### Formatos Soportados
 
 - 📄 Documentos: PDF, DOC, DOCX, TXT
-- 🖼️ Imágenes: JPG, PNG, GIF
+- 🖼️ Imágenes: JPG, PNG, GIF, WEBP
 - 📊 Hojas de cálculo: XLS, XLSX, CSV
 - 📦 Comprimidos: ZIP, RAR
 - 📝 Logs: LOG, TXT
@@ -302,30 +309,28 @@ El dashboard muestra:
 
 - 📈 **Total de Casos**: Cantidad total en el sistema
 - 🔵 **Casos Abiertos**: Casos sin resolver
-- 🟡 **En Progreso**: Casos activos
-- 🟢 **Resueltos**: Casos completados
+- 🟡 **En Standby**: Casos en espera
+- 🟠 **En Monitoreo**: Casos bajo seguimiento
+- 🟢 **Cerrados**: Casos completados
 
 #### Gráficos
 
 1. **Casos por Estado**
-   - Gráfico de barras
-   - Vista de los últimos 30 días
+   - Visualización de distribución actual
+   - Actualizados en tiempo real
 
 2. **Casos por Prioridad**
-   - Gráfico de pastel
-   - Distribución actual
+   - Gráfico mostrando criticidad
+   - Útil para priorizar trabajo
 
-3. **Tendencia Temporal**
-   - Gráfico de líneas
-   - Evolución mensual
-
-4. **Top Responsables**
-   - Ranking de usuarios más activos
+3. **Casos por Servicio**
+   - Distribución por plataforma
+   - Identifica áreas con más incidentes
 
 ### Actualización de Datos
 
-- Automática cada 30 segundos
-- Manual: Click en el botón 🔄 Actualizar
+- **Auto-refresh**: Activa el toggle para actualización automática cada 30 segundos
+- **Manual**: Los datos se actualizan al cargar la página
 
 ---
 
@@ -382,60 +387,254 @@ El dashboard muestra:
 
 ## 📤 Importar y Exportar
 
-### Exportar Casos
+El sistema cuenta con un módulo dedicado para importar y exportar casos de manera masiva.
 
-#### A Excel
+### Acceder al Módulo
 
-1. Ve a **Casos**
-2. Aplica los filtros deseados (opcional)
-3. Click en **Exportar > Excel**
-4. El archivo se descargará automáticamente
+1. En el menú lateral, click en **📤 Importar/Exportar**
+2. Verás dos secciones principales:
+   - **Importación de Casos**
+   - **Exportación de Casos**
 
-**Columnas incluidas**:
-- ID, Título, Descripción, Prioridad, Estado
-- Responsable, Fecha de creación, Última actualización
-
-#### A PDF
-
-1. Ve a **Casos**
-2. Click en **Exportar > PDF**
-3. Elige el formato:
-   - 📄 Lista completa
-   - 📋 Reporte detallado
-4. El PDF se generará y descargará
+---
 
 ### Importar Casos
 
-#### Desde Excel
+#### Importación con Observaciones
 
-1. Click en **Importar > Excel**
-2. Descarga la plantilla si es la primera vez
-3. Completa la plantilla con tus datos
-4. Click en **Seleccionar archivo**
-5. Elige tu archivo completado
-6. Click en **Importar**
+Esta opción permite importar casos con múltiples observaciones asociadas:
 
-**Formato de la plantilla**:
-```
-Título | Descripción | Prioridad | Tipo | Responsable | Fecha Límite
-```
+**Pasos:**
 
-#### Validaciones
+1. En la sección **Importar Casos**, selecciona:
+   - **Archivo de Casos** (requerido): Excel con la información de los casos
+   - **Archivo de Observaciones** (opcional): Excel con las observaciones
+
+2. Click en **Importar Casos**
+
+3. Verás el resultado de la importación:
+   ```
+   ✅ 158 casos importados correctamente
+   ✅ 0 casos actualizados
+   ✅ 429 observaciones importadas
+   ```
+
+#### Formato de Archivos
+
+**Archivo de Casos** (`casos_para_import.xlsx`):
+
+| Columna | Requerido | Ejemplo | Descripción |
+|---------|-----------|---------|-------------|
+| codigo | ✅ | HP-0001 | Identificador único |
+| servicio_o_plataforma | ✅ | HP | Nombre del servicio |
+| estado | ✅ | CaseStatus.ABIERTO | Estado del caso |
+| prioridad | ✅ | Priority.ALTO | Nivel de prioridad |
+| sby_responsable | ❌ | Andrea Coello | Nombre del responsable |
+| fecha_inicio | ❌ | 2024-01-19 | Fecha de apertura |
+| fecha_fin | ❌ | 2024-03-15 | Fecha de cierre (si aplica) |
+| novedades_y_comentarios | ❌ | Descripción detallada | Información del caso |
+
+**Valores válidos para Estado:**
+- `CaseStatus.ABIERTO` o `ABIERTO`
+- `CaseStatus.STANDBY` o `STANDBY`
+- `CaseStatus.EN_MONITOREO` o `EN_MONITOREO`
+- `CaseStatus.CERRADO` o `CERRADO`
+
+**Valores válidos para Prioridad:**
+- `Priority.CRITICO` o `CRITICO`
+- `Priority.ALTO` o `ALTO`
+- `Priority.MEDIO` o `MEDIO`
+- `Priority.BAJO` o `BAJO`
+
+---
+
+**Archivo de Observaciones** (`observaciones_para_import.xlsx`):
+
+| Columna | Requerido | Ejemplo | Descripción |
+|---------|-----------|---------|-------------|
+| case_codigo | ✅ | HP-0001 | Código del caso relacionado |
+| content | ✅ | [ABIERTO] Primera actualización | Contenido de la observación |
+| created_at | ✅ | 2024-01-19 | Fecha de la observación |
+| responsable_momento | ❌ | MVI | Responsable en ese momento |
+| estado_momento | ❌ | ABIERTO | Estado en ese momento |
+
+---
+
+#### Validaciones Automáticas
 
 El sistema validará:
-- ✅ Campos requeridos
-- ✅ Formato de fechas
-- ✅ Existencia de responsables
-- ✅ Valores válidos de prioridad/estado
+- ✅ Columnas requeridas presentes
+- ✅ Formato de enums (estados, prioridades)
+- ✅ Formato de fechas (acepta múltiples formatos)
+- ✅ Existencia de casos para observaciones
+- ✅ Duplicados (actualiza en lugar de duplicar)
 
-#### Resultados de Importación
+#### Manejo de Duplicados
 
-Después de importar, verás un resumen:
+- Si un caso con el mismo **código** ya existe, el sistema lo **actualizará** en lugar de crear uno nuevo
+- Si una observación con el mismo contenido ya existe para un caso, se **omitirá**
+
+#### Manejo de Errores
+
+Si hay errores durante la importación, verás un resumen detallado:
+
 ```
-✅ 45 casos importados correctamente
-❌ 3 casos con errores
-⚠️ 2 casos duplicados (saltados)
+⚠️ Importación completada con algunos errores
+
+Casos importados: 155
+Casos actualizados: 3
+Observaciones importadas: 425
+
+Errores en Casos (2):
+• Fila 15: Campo 'codigo' es requerido
+• Fila 23: Estado inválido: 'PENDIENTE'
+
+Errores en Observaciones (4):
+• Fila 8: Caso 'HP-9999' no encontrado
+• Fila 12: Campo 'content' es requerido
 ```
+
+---
+
+### Exportar Casos
+
+#### Exportación Completa (Casos + Observaciones)
+
+Exporta todos los casos con sus observaciones en un archivo Excel con 2 hojas:
+
+**Pasos:**
+
+1. En la sección **Exportar Casos**, bajo **Exportación Completa (Casos + Observaciones)**
+2. Click en **Excel** o **CSV**
+3. El archivo se descargará automáticamente como `casos_y_observaciones_export.xlsx`
+
+**Contenido del archivo Excel:**
+- **Hoja 1 - "Casos"**: Información completa de todos los casos
+- **Hoja 2 - "Observaciones"**: Todas las observaciones vinculadas con `case_codigo`
+
+**Columnas en la hoja "Casos":**
+- codigo, servicio_o_plataforma, estado, prioridad
+- sby_responsable, fecha_inicio, fecha_fin
+- novedades_y_comentarios, observaciones
+- creado_por_id, created_at, updated_at
+
+**Columnas en la hoja "Observaciones":**
+- id, case_codigo, numero_observacion
+- content, created_by_id, created_at
+
+---
+
+#### Exportación Simple (Solo Casos)
+
+Exporta únicamente la información de casos en un solo archivo:
+
+**Pasos:**
+
+1. Bajo **Exportación Simple (Solo Casos)**, click en:
+   - **Excel** (formato .xlsx)
+   - **CSV** (formato .csv)
+   - **TSV** (formato .tsv)
+
+2. El archivo se descargará con todos los casos actuales
+
+**Cuándo usar cada formato:**
+- **Excel (.xlsx)**: Para análisis en hojas de cálculo con formato
+- **CSV**: Para importar en otras herramientas o bases de datos
+- **TSV**: Para compatibilidad con sistemas legacy
+
+---
+
+### Casos de Uso Comunes
+
+#### 📋 Backup de Datos
+
+```
+Objetivo: Respaldar todos los casos y observaciones
+
+1. Ir a Importar/Exportar
+2. Click en "Excel" bajo Exportación Completa
+3. Guardar archivo con fecha: backup_casos_2025-01-19.xlsx
+4. Guardar en ubicación segura
+```
+
+#### 🔄 Migrar Datos de Excel Legacy
+
+```
+Objetivo: Importar datos de formato antiguo
+
+1. Usar script de transformación (si aplica)
+2. Generar casos_para_import.xlsx y observaciones_para_import.xlsx
+3. En Importar/Exportar, seleccionar ambos archivos
+4. Click en "Importar Casos"
+5. Verificar resultados
+```
+
+#### 📊 Análisis en Excel
+
+```
+Objetivo: Analizar datos fuera del sistema
+
+1. Exportar casos (Exportación Simple - Excel)
+2. Abrir en Microsoft Excel o Google Sheets
+3. Crear tablas dinámicas y gráficos
+4. Generar reportes personalizados
+```
+
+#### 🔁 Actualización Masiva
+
+```
+Objetivo: Actualizar múltiples casos a la vez
+
+1. Exportar casos actuales
+2. Modificar datos en Excel (responsables, estados, etc.)
+3. Re-importar el archivo modificado
+4. El sistema actualizará los casos existentes
+```
+
+#### 📥 Importación Inicial
+
+```
+Objetivo: Cargar casos por primera vez
+
+1. Descargar plantilla de ejemplo (si disponible)
+2. Completar con datos de casos
+3. Opcional: Crear archivo de observaciones
+4. Importar ambos archivos
+5. Verificar que todos los casos se importaron correctamente
+```
+
+---
+
+### Tips y Mejores Prácticas
+
+#### ✅ Preparación de Archivos
+
+- **Usa las plantillas**: Si es tu primera vez, usa los archivos de ejemplo
+- **Revisa los datos**: Verifica que no haya espacios extra o caracteres especiales
+- **Fechas consistentes**: Usa formato ISO (YYYY-MM-DD) para mayor compatibilidad
+- **Códigos únicos**: Asegúrate de que cada caso tenga un código único
+
+#### ✅ Durante la Importación
+
+- **Empieza pequeño**: Prueba con 5-10 casos primero
+- **Revisa errores**: Lee cuidadosamente los mensajes de error
+- **Backup previo**: Exporta tus datos actuales antes de importaciones grandes
+- **Verifica resultados**: Revisa que los casos importados se vean correctos
+
+#### ✅ Exportaciones
+
+- **Filtra antes**: Si solo necesitas ciertos casos, aplica filtros en el Tablero primero
+- **Nombramiento**: Usa nombres descriptivos con fecha (ej: casos_enero_2025.xlsx)
+- **Respaldos regulares**: Exporta semanalmente para tener backups
+
+#### ⚠️ Errores Comunes
+
+| Error | Causa | Solución |
+|-------|-------|----------|
+| "Missing required columns" | Falta una columna obligatoria | Agrega la columna faltante |
+| "Estado inválido" | Valor no permitido en estado | Usa valores válidos: ABIERTO, STANDBY, EN_MONITOREO, CERRADO |
+| "Caso no encontrado" | Observación referencia caso inexistente | Verifica que el case_codigo sea correcto |
+| "Código duplicado" | Ya existe un caso con ese código | El sistema lo actualizará automáticamente |
 
 ---
 
@@ -451,7 +650,7 @@ Después de importar, verás un resumen:
 Puedes actualizar:
 - Nombre completo
 - Email
-- Teléfono
+- Teléfono (opcional)
 - Zona horaria
 
 ### Cambiar Contraseña
@@ -469,21 +668,21 @@ Puedes actualizar:
 - Mínimo 8 caracteres
 - Al menos una mayúscula
 - Al menos un número
-- Al menos un carácter especial
+- Al menos un carácter especial (recomendado)
 
 ### Preferencias
 
 Personaliza tu experiencia:
 
-- **Tema**: Claro / Oscuro / Auto
-- **Idioma**: Español / English
+- **Tema**: Claro / Oscuro / Auto (según sistema)
+- **Idioma**: Español (actual)
 - **Notificaciones**: Activar/desactivar
 - **Formato de fecha**: DD/MM/YYYY o MM/DD/YYYY
-- **Zona horaria**: Selecciona tu zona
+- **Zona horaria**: Selecciona tu zona local
 
 ### Avatar
 
-Tu avatar se genera automáticamente basado en tu email (hash único).
+Tu avatar se genera automáticamente basado en tu email (hash único y colorido).
 
 ---
 
@@ -500,45 +699,60 @@ Tu avatar se genera automáticamente basado en tu email (hash único).
 
 Verifica que:
 - Tengas rol de Admin o Ingreso
-- El caso no esté cerrado
-- Tengas permisos sobre ese caso
+- El caso no esté cerrado (los casos cerrados requieren permisos especiales)
+- Tengas permisos sobre ese caso específico
 
 ### ¿Cómo cambio la zona horaria?
 
 1. Ve a **Mi Perfil > Preferencias**
 2. Selecciona tu zona horaria
 3. Click en **Guardar**
+4. Los timestamps se ajustarán automáticamente
 
 ### ¿Puedo recuperar un caso eliminado?
 
-No, la eliminación es permanente. Solo usuarios Admin pueden eliminar casos.
+No, la eliminación es permanente. Solo usuarios Admin pueden eliminar casos. Por seguridad, los casos importantes no deben eliminarse, sino cerrarse.
 
 ### ¿Cuál es el límite de casos?
 
-No hay límite definido. El sistema puede manejar miles de casos eficientemente.
+No hay límite definido. El sistema puede manejar miles de casos eficientemente gracias a la paginación y filtros optimizados.
 
 ### ¿Se guardan automáticamente los cambios?
 
-No, debes hacer click en **Guardar** para que los cambios persistan.
+No, debes hacer click en **Guardar** para que los cambios persistan. Sin embargo, los borradores se guardan localmente en tu navegador.
 
 ### ¿Cómo sé si hay actualizaciones en un caso?
 
-Los casos actualizados muestran una insignia 🔔 en la lista.
+- Los casos actualizados recientemente aparecen primero si ordenas por fecha
+- Puedes usar el filtro de fecha para ver casos de los últimos días
 
 ### ¿Puedo trabajar offline?
 
-No, Standby Case Manager requiere conexión a internet para funcionar.
+No, Standby Case Manager requiere conexión a internet para funcionar correctamente. Los datos se sincronizan en tiempo real.
 
 ### ¿Los archivos se respaldan?
 
-Sí, todos los archivos se almacenan de forma segura en el servidor y se respaldan diariamente.
+Sí, todos los archivos se almacenan de forma segura en el servidor y se respaldan diariamente mediante snapshots automáticos.
+
+### ¿Cuántas observaciones puede tener un caso?
+
+No hay límite. Un caso puede tener desde cero hasta miles de observaciones. Cada observación tiene su propia fecha y autor.
+
+### ¿Puedo exportar solo ciertos casos?
+
+Sí. Primero aplica los filtros que desees en el Tablero (por fecha, estado, prioridad, etc.), luego ve a Importar/Exportar. La exportación respetará los filtros activos.
+
+### ¿Qué pasa si importo casos que ya existen?
+
+El sistema detecta duplicados por el campo `codigo`. Si un caso ya existe, actualizará su información en lugar de crear uno nuevo.
 
 ### ¿Cómo reporto un bug?
 
 1. Click en tu avatar
 2. Selecciona **Reportar problema**
 3. Describe el problema detalladamente
-4. Envía el reporte
+4. Incluye pasos para reproducir el error
+5. Envía el reporte
 
 ---
 
@@ -546,14 +760,18 @@ Sí, todos los archivos se almacenan de forma segura en el servidor y se respald
 
 Si necesitas ayuda adicional:
 
-- 📧 **Email**: 
-- **Allan Córdova**: [aacordov@gmail.com](mailto:aacordov@gmail.com)
-- **José Briones**: [josmbrio@gmail.com](mailto:josmbrio@gmail.com)
-- **Larry Sánchez**: [lajasanc@gmail.com](mailto:lajasanc@gmail.com)
-- **Ronny Ortiz**: [ronny.ortiz.54@hotmail.com](mailto:ronny.ortiz.54@hotmail.com)
-- 💬 **Chat**: Disponible en horario laboral
+- 📧 **Email de Soporte**:
+  - **Allan Córdova**: [aacordov@gmail.com](mailto:aacordov@gmail.com)
+  - **José Briones**: [josmbrio@gmail.com](mailto:josmbrio@gmail.com)
+  - **Larry Sánchez**: [lajasanc@gmail.com](mailto:lajasanc@gmail.com)
+  - **Ronny Ortiz**: [ronny.ortiz.54@hotmail.com](mailto:ronny.ortiz.54@hotmail.com)
+
+- 💬 **Horario de atención**: Lunes a Viernes, 9:00 AM - 6:00 PM
+
+- 🐛 **Reportar bugs**: Usa la opción "Reportar problema" en tu perfil
 
 ---
 
-**Última actualización**: Enero 2026
-**Versión del manual**: 2.2.3
+**Última actualización**: Enero 2026  
+**Versión del manual**: 2.3.0  
+**Sistema**: Standby Case Manager v2.2.3

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, Users, Menu, ChevronLeft, ChevronRight, Code } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, Users, Menu, ChevronLeft, ChevronRight, Code, Upload } from 'lucide-react';
 import { clsx } from 'clsx';
 import UserMenu from './UserMenu';
 import { CommandPalette } from './ui/CommandPalette';
@@ -33,6 +33,8 @@ export default function Layout() {
         const navItems = [
             { path: '/', label: 'Tablero', icon: LayoutDashboard, roles: ['CONSULTA', 'INGRESO', 'ADMIN'] },
             { path: '/cases/new', label: 'Nuevo Caso', icon: PlusCircle, roles: ['INGRESO', 'ADMIN'] },
+            // ⬇️ NUEVO ITEM: Importar/Exportar
+            { path: '/import-export', label: 'Importar/Exportar', icon: Upload, roles: ['INGRESO', 'ADMIN'] },
             { path: '/users', label: 'Usuarios', icon: Users, roles: ['ADMIN'] },
             { path: '/developers', label: 'Desarrolladores', icon: Code, roles: ['CONSULTA', 'INGRESO', 'ADMIN'] },
         ];

@@ -19,12 +19,247 @@ CASE_PATTERN = re.compile(r"\[(ABIERTO|CERRADO|EN MONITOREO|STANDBY|PENDIENTE)\]
 
 router = APIRouter(prefix="/cases-io", tags=["Import/Export"])
 
+
+# ==========================================
+# NUEVO: IMPORTAR CASOS CON OBSERVACIONES
+# ==========================================
+@router.post("/import-with-observations", status_code=201)
+async def import_cases_with_observations(
+    casos_file: UploadFile = File(...),
+    observaciones_file: UploadFile = File(None),  # Opcional
+    session: AsyncSession = Depends(get_session),
+    current_user = Depends(get_current_user)
+):
+    """
+    Importa casos y sus observaciones desde dos archivos Excel separados:
+    1. casos_para_import.xlsx - Tabla Case
+    2. observaciones_para_import.xlsx - Tabla Observation (opcional)
+    """
+    
+    if not casos_file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(status_code=400, detail="Invalid file format. Please upload Excel file.")
+
+    # ===========================
+    # PASO 1: IMPORTAR CASOS
+    # ===========================
+    casos_contents = await casos_file.read()
+    
+    try:
+        df_casos = pd.read_excel(io.BytesIO(casos_contents))
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error parsing casos file: {str(e)}")
+
+    # Validar columnas requeridas para casos
+    required_cols_casos = ['codigo', 'servicio_o_plataforma', 'estado', 'prioridad']
+    missing_cols = [col for col in required_cols_casos if col not in df_casos.columns]
+    
+    if missing_cols:
+        raise HTTPException(status_code=400, detail=f"Missing required columns in casos file: {', '.join(missing_cols)}")
+
+    df_casos.fillna('', inplace=True)
+
+    casos_importados = 0
+    casos_actualizados = 0
+    errores_casos = []
+    casos_map = {}  # Mapeo codigo -> case_id para las observaciones
+
+    print(f"\n📥 Importando {len(df_casos)} casos...")
+
+    for index, row in df_casos.iterrows():
+        try:
+            # Normalizar enums
+            try:
+                estado_str = str(row['estado']).upper().replace('CASESTATUS.', '')
+                estado = CaseStatus[estado_str]
+            except:
+                estado = CaseStatus.ABIERTO
+            
+            try:
+                prioridad_str = str(row['prioridad']).upper().replace('PRIORITY.', '')
+                prioridad = Priority[prioridad_str]
+            except:
+                prioridad = Priority.MEDIO
+
+            # Parsear fechas
+            fecha_inicio = row.get('fecha_inicio', datetime.utcnow())
+            if isinstance(fecha_inicio, str):
+                try:
+                    fecha_inicio = pd.to_datetime(fecha_inicio)
+                except:
+                    fecha_inicio = datetime.utcnow()
+            
+            fecha_fin = row.get('fecha_fin', None)
+            if fecha_fin and isinstance(fecha_fin, str) and fecha_fin.strip():
+                try:
+                    fecha_fin = pd.to_datetime(fecha_fin)
+                except:
+                    fecha_fin = None
+            else:
+                fecha_fin = None
+
+            created_at = row.get('created_at', fecha_inicio)
+            if isinstance(created_at, str):
+                try:
+                    created_at = pd.to_datetime(created_at)
+                except:
+                    created_at = fecha_inicio
+
+            updated_at = row.get('updated_at', datetime.utcnow())
+            if isinstance(updated_at, str):
+                try:
+                    updated_at = pd.to_datetime(updated_at)
+                except:
+                    updated_at = datetime.utcnow()
+
+            codigo = str(row['codigo']).strip()
+
+            # Verificar si el caso ya existe
+            result = await session.exec(select(Case).where(Case.codigo == codigo))
+            existing_case = result.first()
+
+            if existing_case:
+                # Actualizar caso existente
+                existing_case.servicio_o_plataforma = str(row['servicio_o_plataforma'])
+                existing_case.prioridad = prioridad
+                existing_case.estado = estado
+                existing_case.sby_responsable = str(row.get('sby_responsable', ''))
+                existing_case.novedades_y_comentarios = str(row.get('novedades_y_comentarios', ''))
+                existing_case.observaciones = str(row.get('observaciones', ''))
+                existing_case.fecha_inicio = fecha_inicio
+                existing_case.fecha_fin = fecha_fin
+                existing_case.updated_at = updated_at
+                
+                session.add(existing_case)
+                casos_map[codigo] = existing_case.id
+                casos_actualizados += 1
+            else:
+                # Crear nuevo caso
+                new_case = Case(
+                    codigo=codigo,
+                    servicio_o_plataforma=str(row['servicio_o_plataforma']),
+                    prioridad=prioridad,
+                    estado=estado,
+                    novedades_y_comentarios=str(row.get('novedades_y_comentarios', '')),
+                    sby_responsable=str(row.get('sby_responsable', '')),
+                    observaciones=str(row.get('observaciones', '')),
+                    creado_por_id=current_user.id,
+                    fecha_inicio=fecha_inicio,
+                    fecha_fin=fecha_fin,
+                    created_at=created_at,
+                    updated_at=updated_at
+                )
+                
+                session.add(new_case)
+                await session.flush()  # Para obtener el ID
+                casos_map[codigo] = new_case.id
+                casos_importados += 1
+
+        except Exception as e:
+            errores_casos.append(f"Fila {index+2}: {str(e)}")
+
+    await session.commit()
+    print(f"✅ Casos importados: {casos_importados}, actualizados: {casos_actualizados}")
+
+    # ===========================
+    # PASO 2: IMPORTAR OBSERVACIONES (si se proporciona el archivo)
+    # ===========================
+    observaciones_importadas = 0
+    errores_observaciones = []
+
+    if observaciones_file:
+        print(f"\n📝 Importando observaciones...")
+        
+        observaciones_contents = await observaciones_file.read()
+        
+        try:
+            df_observaciones = pd.read_excel(io.BytesIO(observaciones_contents))
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error parsing observaciones file: {str(e)}")
+
+        # Validar columnas
+        required_cols_obs = ['case_codigo', 'content', 'created_at']
+        missing_cols_obs = [col for col in required_cols_obs if col not in df_observaciones.columns]
+        
+        if missing_cols_obs:
+            raise HTTPException(status_code=400, detail=f"Missing required columns in observaciones file: {', '.join(missing_cols_obs)}")
+
+        df_observaciones.fillna('', inplace=True)
+
+        for index, row in df_observaciones.iterrows():
+            try:
+                case_codigo = str(row['case_codigo']).strip()
+                
+                # Buscar el case_id
+                if case_codigo not in casos_map:
+                    # Buscar en BD si no está en el mapa
+                    result = await session.exec(select(Case).where(Case.codigo == case_codigo))
+                    case = result.first()
+                    if not case:
+                        errores_observaciones.append(f"Fila {index+2}: Caso '{case_codigo}' no encontrado")
+                        continue
+                    case_id = case.id
+                else:
+                    case_id = casos_map[case_codigo]
+
+                # Parsear fecha de observación
+                created_at_obs = row.get('created_at', datetime.utcnow())
+                if isinstance(created_at_obs, str):
+                    try:
+                        created_at_obs = pd.to_datetime(created_at_obs)
+                    except:
+                        created_at_obs = datetime.utcnow()
+
+                # Verificar si la observación ya existe (evitar duplicados)
+                content = str(row['content'])
+                result = await session.exec(
+                    select(Observation).where(
+                        Observation.case_id == case_id,
+                        Observation.content == content
+                    )
+                )
+                existing_obs = result.first()
+
+                if not existing_obs:
+                    # Crear nueva observación
+                    new_observation = Observation(
+                        case_id=case_id,
+                        content=content,
+                        created_by_id=current_user.id,
+                        created_at=created_at_obs
+                    )
+                    
+                    session.add(new_observation)
+                    observaciones_importadas += 1
+
+            except Exception as e:
+                errores_observaciones.append(f"Fila {index+2}: {str(e)}")
+
+        await session.commit()
+        print(f"✅ Observaciones importadas: {observaciones_importadas}")
+
+    return {
+        "message": f"Importación completada exitosamente",
+        "casos_importados": casos_importados,
+        "casos_actualizados": casos_actualizados,
+        "observaciones_importadas": observaciones_importadas,
+        "errores_casos": errores_casos,
+        "errores_observaciones": errores_observaciones
+    }
+
+
+# ==========================================
+# IMPORTACIÓN SIMPLE (MANTENIDO PARA COMPATIBILIDAD)
+# ==========================================
 @router.post("/import", status_code=201)
 async def import_cases(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
     current_user = Depends(get_current_user)
 ):
+    """
+    Importación simple de casos sin observaciones separadas.
+    Mantiene compatibilidad con el formato anterior.
+    """
     if not file.filename.endswith(('.xlsx', '.xls', '.csv')):
         raise HTTPException(status_code=400, detail="Invalid file format. Please upload Excel or CSV.")
 
@@ -105,12 +340,19 @@ async def import_cases(
         "errors": errors
     }
 
+
+# ==========================================
+# IMPORTACIÓN LEGACY (MANTENIDO)
+# ==========================================
 @router.post("/import-legacy", status_code=201)
 async def import_legacy_cases(
     file: UploadFile = File(...),
     session: AsyncSession = Depends(get_session),
     current_user = Depends(get_current_user)
 ):
+    """
+    Importa casos desde archivos Excel legacy con formato de bitácora semanal.
+    """
     if not file.filename.endswith(('.xlsx', '.xls')):
         raise HTTPException(status_code=400, detail="Invalid file format. Please upload Excel.")
 
@@ -140,19 +382,13 @@ async def import_legacy_cases(
     cases_map = {}
     admin_id = current_user.id
     
-    # Pre-fetch existing cases to map
-    # Ideally should be doing upsert, but script logic was comprehensive
-    
     warnings = []
-    
     count_created = 0
     count_updated = 0
 
     for idx, row in df.iterrows():
-        # Validate Row bounds
         if len(row) < 26: continue
         
-        # Date Check
         raw_date = row[COL_DATE]
         if pd.isna(raw_date) or str(raw_date).strip() == "":
             continue
@@ -162,16 +398,13 @@ async def import_legacy_cases(
         except:
             continue
         
-        # Responsible
         resp = str(row[COL_RESP]).strip() if not pd.isna(row[COL_RESP]) else "Sin Asignar"
         if resp == "nan": resp = "Sin Asignar"
         
-        # Content
         content_block = str(row[COL_CONTENT])
         if pd.isna(row[COL_CONTENT]) or content_block == "nan":
             continue
             
-        # Parse Block
         content_block = content_block.replace("\n", " ").strip()
         for status in ["ABIERTO", "CERRADO", "EN MONITOREO", "STANDBY"]:
             content_block = content_block.replace(f"[{status}]", f"\n[{status}]")
@@ -187,7 +420,6 @@ async def import_legacy_cases(
             if match:
                 status_str, code_str, desc_str = match.groups()
                 
-                # Normalize
                 status_enum = CaseStatus.ABIERTO
                 s_upper = status_str.upper()
                 if "CERRADO" in s_upper: status_enum = CaseStatus.CERRADO
@@ -198,40 +430,17 @@ async def import_legacy_cases(
                 desc = desc_str.strip()
                 service = code.split(' ')[0] if ' ' in code else "General"
                 
-                # Check Local Map first (to handle duplicates in same file logic)
-                # But we also need DB check
-                
                 if code in cases_map:
-                    # Logic for updating existing object in memory
                     existing_case = cases_map[code]
                     
-                    # Audit Logic
-                    audit_details = {}
                     if existing_case.sby_responsable != resp:
-                        audit_details["sby_responsable"] = {"old": existing_case.sby_responsable, "new": resp}
                         existing_case.sby_responsable = resp
                     
                     if existing_case.estado != status_enum:
-                        audit_details["estado"] = {"old": existing_case.estado, "new": status_enum}
                         existing_case.estado = status_enum
                         
                     existing_case.updated_at = date_val
                     
-                    if audit_details:
-                        audit = CaseAudit(
-                            case_id=existing_case.id, # Might be None if new, but we flush later? 
-                            # If new in this transaction, ID is not available till flush.
-                            # Complex imports usually need session.flush() inside loop.
-                            user_id=admin_id,
-                            action=CaseAuditType.UPDATE,
-                            details=audit_details,
-                            timestamp=date_val
-                        )
-                        # We can't add audit if ID is None. 
-                        # Simplified: Just add observation for legacy import
-                        # OR: flush new_case immediately upon creation.
-                    
-                    # Observation
                     obs = Observation(
                         case=existing_case,
                         content=f"**[{date_val.strftime('%Y-%m-%d')}] Actualización Semanal:**\n{desc}",
@@ -243,12 +452,10 @@ async def import_legacy_cases(
                     count_updated += 1
                     
                 else:
-                    # Check DB
                     existing_db = await session.exec(select(Case).where(Case.codigo == code))
                     existing_case_db = existing_db.first()
                     
                     if existing_case_db:
-                        # Existing in DB, add to map and update
                         cases_map[code] = existing_case_db
                         existing_case_db.estado = status_enum
                         existing_case_db.sby_responsable = resp
@@ -264,7 +471,6 @@ async def import_legacy_cases(
                         session.add(existing_case_db)
                         count_updated += 1
                     else:
-                        # New Case
                         new_case = Case(
                             codigo=code,
                             servicio_o_plataforma=service,
@@ -277,10 +483,8 @@ async def import_legacy_cases(
                             updated_at=date_val
                         )
                         session.add(new_case)
-                        # We need to map it, but it doesn't have ID yet.
                         cases_map[code] = new_case
                         
-                        # Initial Obser
                         obs = Observation(
                             case=new_case,
                             content=f"**[{date_val.strftime('%Y-%m-%d')}] Importación Inicial:**\n{desc}",
@@ -292,14 +496,113 @@ async def import_legacy_cases(
 
     await session.commit()
     return {"message": f"Legacy Import Processed: {count_created} created, {count_updated} updates."}
- 
 
+
+# ==========================================
+# NUEVO: EXPORTAR CASOS CON OBSERVACIONES
+# ==========================================
+@router.get("/export-with-observations")
+async def export_cases_with_observations(
+    format: str = Query("xlsx", pattern="^(xlsx|csv)$"),
+    session: AsyncSession = Depends(get_session)
+):
+    """
+    Exporta casos y observaciones en dos archivos separados (en un ZIP) o en hojas separadas de Excel.
+    """
+    # Obtener todos los casos
+    cases_result = await session.exec(select(Case))
+    cases = cases_result.all()
+
+    if not cases:
+        raise HTTPException(status_code=404, detail="No cases found to export.")
+
+    # Obtener todas las observaciones
+    observations_result = await session.exec(select(Observation))
+    observations = observations_result.all()
+
+    # Crear DataFrame de casos
+    cases_data = []
+    for case in cases:
+        cases_data.append({
+            'codigo': case.codigo,
+            'servicio_o_plataforma': case.servicio_o_plataforma,
+            'estado': f"CaseStatus.{case.estado.value}",
+            'prioridad': f"Priority.{case.prioridad.value}",
+            'sby_responsable': case.sby_responsable or '',
+            'fecha_inicio': case.fecha_inicio,
+            'fecha_fin': case.fecha_fin,
+            'novedades_y_comentarios': case.novedades_y_comentarios or '',
+            'observaciones': case.observaciones or '',
+            'creado_por_id': case.creado_por_id,
+            'created_at': case.created_at,
+            'updated_at': case.updated_at
+        })
+    
+    df_cases = pd.DataFrame(cases_data)
+
+    # Crear DataFrame de observaciones
+    observations_data = []
+    obs_counter = {}  # Para numerar observaciones por caso
+    
+    for obs in observations:
+        case_codigo = next((c.codigo for c in cases if c.id == obs.case_id), 'UNKNOWN')
+        
+        if case_codigo not in obs_counter:
+            obs_counter[case_codigo] = 0
+        obs_counter[case_codigo] += 1
+        
+        observations_data.append({
+            'id': obs.id,
+            'case_codigo': case_codigo,
+            'numero_observacion': obs_counter[case_codigo],
+            'content': obs.content,
+            'created_by_id': obs.created_by_id,
+            'created_at': obs.created_at
+        })
+    
+    df_observations = pd.DataFrame(observations_data)
+
+    # Crear archivo Excel con múltiples hojas
+    if format == 'xlsx':
+        stream = io.BytesIO()
+        
+        with pd.ExcelWriter(stream, engine='openpyxl') as writer:
+            df_cases.to_excel(writer, sheet_name='Casos', index=False)
+            if len(df_observations) > 0:
+                df_observations.to_excel(writer, sheet_name='Observaciones', index=False)
+        
+        stream.seek(0)
+        
+        return StreamingResponse(
+            stream,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=casos_y_observaciones_export.xlsx"}
+        )
+    else:
+        # Para CSV, exportar solo casos (mantener compatibilidad)
+        stream = io.BytesIO()
+        df_cases.to_csv(stream, index=False, encoding='utf-8')
+        stream.seek(0)
+        
+        return StreamingResponse(
+            stream,
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=casos_export.csv"}
+        )
+
+
+# ==========================================
+# EXPORTACIÓN SIMPLE (MANTENIDO)
+# ==========================================
 @router.get("/export")
 async def export_cases(
-    #format: str = Query("tsv", regex="^(tsv|csv|xlsx)$"),
     format: str = Query("tsv", pattern="^(tsv|csv|xlsx)$"),
     session: AsyncSession = Depends(get_session)
 ):
+    """
+    Exportación simple de casos en un solo archivo.
+    Mantiene compatibilidad con el formato anterior.
+    """
     statement = select(Case)
     results = await session.exec(statement)
     cases = results.all()
@@ -310,9 +613,6 @@ async def export_cases(
     # Convert to DataFrame
     data = [case.dict() for case in cases]
     df = pd.DataFrame(data)
-
-    # Clean data (remove IDs potentially, or keep them)
-    # Keeping all data is usually better for backup purposes
 
     stream = io.BytesIO()
 
@@ -332,7 +632,7 @@ async def export_cases(
     stream.seek(0)
     
     return StreamingResponse(
-        stream, 
-        media_type=media_type, 
+        stream,
+        media_type=media_type,
         headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
