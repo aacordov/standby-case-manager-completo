@@ -119,6 +119,7 @@ class Observation(SQLModel, table=True):
     created_by_id: Optional[int] = Field(default=None, foreign_key="user.id")
     
     case: Optional[Case] = Relationship(back_populates="observaciones_list")
+    created_by: Optional[User] = Relationship()
 
 class ObservationUpdate(SQLModel):
     content: str

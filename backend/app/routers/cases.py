@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select, or_
+from sqlmodel import select, or_, func
 from typing import List, Optional
 from datetime import datetime, timedelta
 from app.database import get_session
@@ -63,10 +63,10 @@ async def create_case(case: CaseCreate, session: AsyncSession = Depends(get_sess
         
     return db_case
 
-@router.get("/", response_model=List[Case])
+@router.get("/")
 async def read_cases(
     skip: int = 0,
-    limit: int = 100,
+    limit: int = 100,  # Volver a 100 para paginación
     status: Optional[CaseStatus] = None,
     priority: Optional[Priority] = None,
     service: Optional[str] = None,
@@ -102,11 +102,46 @@ async def read_cases(
              # Adjust for timezone
              end_date = end_date + timedelta(minutes=timezone_offset)
         query = query.where(Case.updated_at <= end_date)
+    
+    # Contar total de casos que cumplen los filtros
+    count_query = select(func.count()).select_from(Case)
+    if status:
+        count_query = count_query.where(Case.estado == status)
+    if priority:
+        count_query = count_query.where(Case.prioridad == priority)
+    if service:
+        count_query = count_query.where(Case.servicio_o_plataforma.ilike(f"%{service}%"))
+    if sby_responsable:
+        count_query = count_query.where(Case.sby_responsable.ilike(f"%{sby_responsable}%"))
+    if search:
+        count_query = count_query.where(or_(Case.novedades_y_comentarios.ilike(f"%{search}%"), Case.codigo.ilike(f"%{search}%")))
+    if start_date:
+        if timezone_offset is not None:
+            start_date_count = start_date
+        else:
+            start_date_count = start_date + timedelta(minutes=timezone_offset) if timezone_offset else start_date
+        count_query = count_query.where(Case.updated_at >= start_date_count)
+    if end_date:
+        end_date_count = end_date.replace(hour=23, minute=59, second=59, microsecond=999999)
+        if timezone_offset is not None:
+            end_date_count = end_date_count + timedelta(minutes=timezone_offset)
+        count_query = count_query.where(Case.updated_at <= end_date_count)
+    
+    total_count = (await session.execute(count_query)).scalar_one()
         
     query = query.order_by(Case.updated_at.desc()).offset(skip).limit(limit)
     result = await session.execute(query)
     cases = result.scalars().all()
-    return cases
+    
+    # Retornar datos con metadatos de paginación
+    return {
+        "items": cases,
+        "total": total_count,
+        "skip": skip,
+        "limit": limit,
+        "page": (skip // limit) + 1,
+        "total_pages": (total_count + limit - 1) // limit
+    }
 
 @router.get("/{case_id}", response_model=CaseReadWithDetails)
 async def read_case(case_id: int, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
@@ -259,8 +294,8 @@ async def get_case_timeline(
     session: AsyncSession = Depends(get_session),
     current_user: User = Depends(get_current_user)
 ):
-    # Fetch observations
-    obs_query = select(Observation).where(Observation.case_id == case_id)
+    # Fetch observations WITH user relationship loaded
+    obs_query = select(Observation).where(Observation.case_id == case_id).options(selectinload(Observation.created_by))
     obs_result = await session.execute(obs_query)
     observations = obs_result.scalars().all()
     
@@ -272,14 +307,13 @@ async def get_case_timeline(
     timeline = []
     
     for obs in observations:
-        # Fetch user name for obs? Ideally join or preload
-        # For simplicity assuming created_by_id logic or we can preload User in Observation too
         timeline.append({
             "type": "OBSERVATION",
             "id": obs.id,
             "content": obs.content,
             "created_at": obs.created_at,
-            "user_id": obs.created_by_id
+            "user_id": obs.created_by_id,
+            "user_name": obs.created_by.nombre if obs.created_by else "Usuario"
         })
         
     for audit in audits:
